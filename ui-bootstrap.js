@@ -1602,6 +1602,9 @@ angular.module('ui.bootstrap.modal', [])
 
               var modalScope = (modalOptions.scope || $rootScope).$new();
 
+              modalScope.$close = modalInstance.close;
+              modalScope.$dismiss = modalInstance.dismiss;
+
               var ctrlInstance, ctrlLocals = {};
               var resolveIter = 1;
 
