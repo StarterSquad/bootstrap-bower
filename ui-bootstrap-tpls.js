@@ -1579,10 +1579,10 @@ angular.module('ui.bootstrap.modal', [])
               result: modalResultDeferred.promise,
               opened: modalOpenedDeferred.promise,
               close: function (result) {
-                $modalStack.close(this, result);
+                $modalStack.close(modalInstance, result);
               },
               dismiss: function (reason) {
-                $modalStack.dismiss(this, reason);
+                $modalStack.dismiss(modalInstance, reason);
               }
             };
 
@@ -1646,6 +1646,7 @@ angular.module('ui.bootstrap.modal', [])
         }]
     };
   });
+
 angular.module('ui.bootstrap.pagination', [])
 
 .controller('PaginationController', ['$scope', '$attrs', '$parse', '$interpolate', function ($scope, $attrs, $parse, $interpolate) {
