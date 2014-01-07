@@ -2,7 +2,7 @@
  * angular-ui-bootstrap
  * http://angular-ui.github.io/bootstrap/
 
- * Version: 0.10.0-SNAPSHOT - 2014-01-05
+ * Version: 0.10.0-SNAPSHOT - 2014-01-07
  * License: MIT
  */
 angular.module("ui.bootstrap", ["ui.bootstrap.transition","ui.bootstrap.collapse","ui.bootstrap.accordion","ui.bootstrap.alert","ui.bootstrap.bindHtml","ui.bootstrap.buttons","ui.bootstrap.carousel","ui.bootstrap.position","ui.bootstrap.datepicker","ui.bootstrap.dropdownToggle","ui.bootstrap.modal","ui.bootstrap.pagination","ui.bootstrap.tooltip","ui.bootstrap.popover","ui.bootstrap.progressbar","ui.bootstrap.rating","ui.bootstrap.tabs","ui.bootstrap.timepicker","ui.bootstrap.typeahead"]);
@@ -3082,17 +3082,17 @@ angular.module('ui.bootstrap.typeahead', ['ui.bootstrap.position', 'ui.bootstrap
       //should it restrict model values to the ones selected from the popup only?
       var isEditable = originalScope.$eval(attrs.typeaheadEditable) !== false;
 
-      //binding to a variable that indicates if matches are being retrieved asynchronously
-      var isLoadingSetter = $parse(attrs.typeaheadLoading).assign || angular.noop;
-
-      //a callback executed when a match is selected
-      var onSelectCallback = $parse(attrs.typeaheadOnSelect);
-
       //a callback executed when a match is hovered
       var onHoverCallback = $parse(attrs.typeaheadOnHover);
 
       //a callback executed when dropdown will be closed
       var onCloseCallback = $parse(attrs.typeaheadOnClose);
+
+      //binding to a variable that indicates if matches are being retrieved asynchronously
+      var isLoadingSetter = $parse(attrs.typeaheadLoading).assign || angular.noop;
+
+      //a callback executed when a match is selected
+      var onSelectCallback = $parse(attrs.typeaheadOnSelect);
 
       var inputFormatter = attrs.typeaheadInputFormatter ? $parse(attrs.typeaheadInputFormatter) : undefined;
 
@@ -3164,8 +3164,9 @@ angular.module('ui.bootstrap.typeahead', ['ui.bootstrap.position', 'ui.bootstrap
               scope.position = appendToBody ? $position.offset(element) : $position.position(element);
               scope.position.top = scope.position.top + element.prop('offsetHeight');
 
-              //fire onHover
+              //fire onHover on first item
               scope.hover(scope.activeIdx);
+
             } else {
               resetMatches();
             }
@@ -3244,21 +3245,26 @@ angular.module('ui.bootstrap.typeahead', ['ui.bootstrap.position', 'ui.bootstrap
         }
       });
 
-      scope.select = function (activeIdx) {
-        //called from within the $digest() cycle
+      var getItemModelLabel = function (activeIdx) {
         var locals = {};
         var model, item;
 
         locals[parserResult.itemName] = item = scope.matches[activeIdx].model;
         model = parserResult.modelMapper(originalScope, locals);
-        $setModelValue(originalScope, model);
-        modelCtrl.$setValidity('editable', true);
 
-        onSelectCallback(originalScope, {
+        return {
           $item: item,
           $model: model,
           $label: parserResult.viewMapper(originalScope, locals)
-        });
+        };
+      };
+
+      scope.select = function (activeIdx) {
+        var itemModelLabel = getItemModelLabel(activeIdx);
+        $setModelValue(originalScope, itemModelLabel.$model);
+        modelCtrl.$setValidity('editable', true);
+
+        onSelectCallback(originalScope, itemModelLabel);
 
         resetMatches();
 
@@ -3267,24 +3273,7 @@ angular.module('ui.bootstrap.typeahead', ['ui.bootstrap.position', 'ui.bootstrap
       };
 
       scope.hover = function (activeIdx) {
-        if (onHoverCallback === angular.noop) {
-          return false;
-        }
-
-        //called from within the $digest() cycle
-        var locals = {};
-        var model, item;
-
-        locals[parserResult.itemName] = item = scope.matches[activeIdx].model;
-        model = parserResult.modelMapper(originalScope, locals);
-        $setModelValue(originalScope, model);
-        modelCtrl.$setValidity('editable', true);
-
-        onHoverCallback(originalScope, {
-          $item: item,
-          $model: model,
-          $label: parserResult.viewMapper(originalScope, locals)
-        });
+        onHoverCallback(originalScope, getItemModelLabel(activeIdx));
       };
 
       scope.$watch('activeIdx', function (value) {
@@ -3322,21 +3311,21 @@ angular.module('ui.bootstrap.typeahead', ['ui.bootstrap.position', 'ui.bootstrap
           evt.stopPropagation();
 
           resetMatches();
-          scope.$apply(function () {
-            onCloseCallback(originalScope, {});
-          });
           scope.$digest();
+          onCloseCallback(originalScope, {});
         }
       });
 
       element.bind('blur', function (evt) {
         hasFocus = false;
-        onCloseCallback(originalScope, {});
       });
 
       // Keep reference to click handler to unbind it.
       var dismissClickHandler = function (evt) {
         if (element[0] !== evt.target) {
+          if (scope.matches.length) {
+            onCloseCallback(originalScope, {});
+          }
           resetMatches();
           scope.$digest();
         }
