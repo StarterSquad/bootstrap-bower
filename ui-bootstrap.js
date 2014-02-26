@@ -3145,7 +3145,7 @@ angular.module('ui.bootstrap.typeahead', ['ui.bootstrap.position', 'ui.bootstrap
           if (inputValue === modelCtrl.$viewValue && hasFocus) {
             if (matches.length > 0) {
 
-              scope.activeIdx = 0;
+              scope.activeIdx = -1;
               scope.matches.length = 0;
 
               //transform labels
@@ -3248,8 +3248,11 @@ angular.module('ui.bootstrap.typeahead', ['ui.bootstrap.position', 'ui.bootstrap
       var getItemModelLabel = function (activeIdx) {
         var locals = {};
         var model, item;
+        var match = scope.matches[activeIdx];
 
-        locals[parserResult.itemName] = item = scope.matches[activeIdx].model;
+        if (!match) return;
+ 
+        locals[parserResult.itemName] = item = match.model;
         model = parserResult.modelMapper(originalScope, locals);
 
         return {
@@ -3261,8 +3264,11 @@ angular.module('ui.bootstrap.typeahead', ['ui.bootstrap.position', 'ui.bootstrap
 
       scope.select = function (activeIdx) {
         var itemModelLabel = getItemModelLabel(activeIdx);
-        $setModelValue(originalScope, itemModelLabel.$model);
-        modelCtrl.$setValidity('editable', true);
+
+        if (itemModelLabel) {
+          $setModelValue(originalScope, itemModelLabel.$model);
+          modelCtrl.$setValidity('editable', true);
+        }
 
         onSelectCallback(originalScope, itemModelLabel);
 
@@ -3273,7 +3279,8 @@ angular.module('ui.bootstrap.typeahead', ['ui.bootstrap.position', 'ui.bootstrap
       };
 
       scope.hover = function (activeIdx) {
-        onHoverCallback(originalScope, getItemModelLabel(activeIdx));
+        var itemModelLabel = getItemModelLabel(activeIdx);
+        itemModelLabel && onHoverCallback(originalScope, itemModelLabel);
       };
 
       scope.$watch('activeIdx', function (value) {
@@ -3301,6 +3308,10 @@ angular.module('ui.bootstrap.typeahead', ['ui.bootstrap.position', 'ui.bootstrap
         } else if (evt.which === 38) {
           scope.activeIdx = (scope.activeIdx ? scope.activeIdx : scope.matches.length) - 1;
           scope.$digest();
+
+          if (scope.activeIdx === 0) {
+              scope.select(-1);
+          }
 
         } else if (evt.which === 13 || evt.which === 9) {
           scope.$apply(function () {
