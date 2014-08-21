@@ -1226,6 +1226,15 @@ function ($compile, $parse, $document, $position, dateFilter, datepickerPopupCon
         });
       });
 
+      element.bind('keydown', function(event) {
+        console.log(event.keyCode);
+        if (event.keyCode === 9) {
+          scope.$apply(function() {
+            setOpen( false );
+          });
+        }
+      });
+
       // Outter change
       ngModel.$render = function() {
         var date = ngModel.$viewValue ? dateFilter(ngModel.$viewValue, dateFormat) : '';
